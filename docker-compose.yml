@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - "8080:8080"
+        depends_on:
+            - db
+        environment:
+            - DATABASE_URL=postgres://user:password@db:5432/wow_tracker?sslmode=disable
+            - BLIZZARD_CLIENT_ID=9511f15bd8ed493d8fbc08a8c572289d
+            - BLIZZARD_CLIENT_SECRET=SnMpMjkFCtaKxFztbO8uzqlksrFYr3Rb
+            - DISCORD_CLIENT_ID=1350888228449943552  # Добавляем Discord ClientID
+            - DISCORD_CLIENT_SECRET=flJZ3KE1g3gwoZFgKdMBQATnCx4acm61  # Добавляем Discord ClientSecret
+
+    db:
+        image: postgres:15
+        environment:
+            - POSTGRES_USER=user
+            - POSTGRES_PASSWORD=password
+            - POSTGRES_DB=wow_tracker
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U user -d wow_tracker"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    postgres_data:

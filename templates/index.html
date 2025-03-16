@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WoW Guild Tracker</title>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Основной стиль */
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://cdn.discordapp.com/attachments/1035914666414702703/1350902050304819231/1645910642_2-gamerwall-pro-p-bezdna-varkraft-krasivie-oboi-2.jpg?ex=67d86d13&is=67d71b93&hm=6b55394aeef97e49abb4281cf75c3a9cabb90acb7a7f08cc3c0660419b5b0544&') no-repeat center center fixed;
+            background-size: cover;
+            color: #E5E5E5;
+            font-family: 'Roboto Condensed', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Эффект затемнения фона */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            animation: pulse 5s infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 0.9; }
+        }
+
+        /* Контейнер для контента */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: rgba(27, 31, 42, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #00AEFF;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Логотип WoW */
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            width: 80px;
+            height: 80px;
+            filter: drop-shadow(0 0 10px rgba(0, 174, 255, 0.5));
+            transition: transform 0.3s;
+        }
+
+        .logo:hover {
+            transform: scale(1.1);
+        }
+
+        /* Заголовки */
+        h1 {
+            color: #00AEFF;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(0, 174, 255, 0.7);
+            animation: glow 2s infinite alternate;
+        }
+
+        h2 {
+            color: #FFFFFF;
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Анимация свечения */
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(0, 174, 255, 0.5);
+            }
+            to {
+                text-shadow: 0 0 25px rgba(0, 174, 255, 1);
+            }
+        }
+
+        /* Таблица */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #1B1F2A;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 174, 255, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeIn 1s ease-in;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #2A2F3A;
+        }
+
+        th {
+            background: linear-gradient(90deg, #0070DE, #00AEFF);
+            color: #FFFFFF;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-right: 1px solid #004080;
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        tr {
+            transition: background-color 0.3s;
+            opacity: 0;
+            animation: fadeInRow 0.5s forwards;
+        }
+
+        @keyframes fadeInRow {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        tr:hover {
+            background-color: #2A2F3A;
+            box-shadow: 0 0 10px rgba(0, 174, 255, 0.3) inset;
+        }
+
+        /* Стиль для ячеек */
+        td {
+            color: #E5E5E5;
+            border-right: 1px solid #2A2F3A;
+            vertical-align: middle;
+        }
+
+        td:last-child {
+            border-right: none;
+        }
+
+        td:nth-child(3), /* Level */
+        td:nth-child(6) /* Mythic+ Score */ {
+            text-align: center;
+        }
+
+        /* Улучшение текста классов и гильдий */
+        td:nth-child(4), /* Class */
+        td:nth-child(5) /* Guild */ {
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+
+        /* Кнопки */
+        button {
+            background: linear-gradient(90deg, #00AEFF, #0070DE);
+            border: none;
+            padding: 8px 16px;
+            color: #FFFFFF;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+            text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(0, 174, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 174, 255, 0.7);
+            background: linear-gradient(90deg, #00C4FF, #0088FF);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* Стиль для главного персонажа */
+        .main-char {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        /* Стиль для метки "Main" */
+        .main-char-label {
+            color: #FFFFFF;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: rgba(0, 174, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Discord информация */
+        .discord-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #FFFFFF;
+            background: rgba(0, 174, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 174, 255, 0.2);
+        }
+
+        /* Форма */
+        form {
+            display: inline;
+        }
+
+        /* Иконка гильдии */
+        .guild-icon {
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0, 174, 255, 0.5);
+        }
+
+        /* Иконка класса */
+        .class-icon {
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        /* Ссылка */
+        a {
+            color: #00AEFF;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px;
+                padding: 10px;
+            }
+            h1 {
+                font-size: 36px;
+            }
+            h2 {
+                font-size: 22px;
+            }
+            table, th, td {
+                font-size: 14px;
+            }
+            th, td {
+                padding: 8px;
+            }
+            button {
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <img src="https://cdn.discordapp.com/attachments/1035914666414702703/1350900447384436806/86463615dfe4c063a2e48322bd9eb4d3de81104b81b06196032902491f2273d4.gif?ex=67d86b95&is=67d71a15&hm=d745d67887acafa03c7e9a5dc4c5610c2bbc18ba962b4c4588ab08965aad47cf&" alt="WoW Logo" class="logo">
+    <h1>WoW Guild Tracker</h1>
+
+    {{if .Characters}}
+    <h2>Your Characters</h2>
+    {{if gt (len .Characters) 0}}
+    <div class="discord-info">
+        {{if .HasDiscordLink}}
+        <p>Linked Discord: <span style="color: #00AEFF;">{{.DiscordName}}</span></p>
+        {{else}}
+        <form action="/link-discord" method="get">
+            <input type="hidden" name="access_token" value="{{.AccessToken}}">
+            <button type="submit">Link Discord</button>
+        </form>
+        {{end}}
+    </div>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Realm</th>
+            <th>Level</th>
+            <th>Class</th>
+            <th>Guild</th>
+            <th>Mythic+ Score</th>
+            <th>Action</th>
+        </tr>
+        {{range $index, $char := .Characters}}
+        <tr>
+            <td>
+                {{if and (eq $char.Name $.MainCharName) (eq $char.TranslatedRealm $.MainCharRealm)}}
+                <span class="main-char">{{ $char.Name }}</span>
+                {{if $.HasDiscordLink}}
+                (Discord: <span style="color: #00AEFF;">{{ $.DiscordName }}</span>)
+                {{end}}
+                {{else}}
+                {{ $char.Name }}
+                {{end}}
+            </td>
+            <td>{{ $char.TranslatedRealm }}</td>
+            <td>{{ $char.Level }}</td>
+            <td>
+                {{ $char.PlayableClass }}
+            </td>
+            <td>
+                {{if eq $char.Guild ""}}
+                -
+                {{else}}
+                <img src="https://cdn.discordapp.com/attachments/1035914666414702703/1350900447384436806/86463615dfe4c063a2e48322bd9eb4d3de81104b81b06196032902491f2273d4.gif?ex=67d86b95&is=67d71a15&hm=d745d67887acafa03c7e9a5dc4c5610c2bbc18ba962b4c4588ab08965aad47cf&" alt="Guild Icon" class="guild-icon">
+                {{ $char.Guild }}
+                {{end}}
+            </td>
+            <td>{{if eq $char.MythicScore 0.0}}0.0{{else}}{{printf "%.1f" $char.MythicScore}}{{end}}</td>
+            <td>
+                {{if and (eq $char.Name $.MainCharName) (eq $char.TranslatedRealm $.MainCharRealm)}}
+                <span class="main-char-label">Main</span>
+                {{else}}
+                <form action="/set-main" method="post">
+                    <input type="hidden" name="character_name" value="{{ $char.Name }}">
+                    <input type="hidden" name="realm" value="{{ $char.Realm }}">
+                    <input type="hidden" name="access_token" value="{{ $.AccessToken }}">
+                    <button type="submit">Set Main</button>
+                </form>
+                {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </table>
+    {{else}}
+    <p style="text-align: center; color: #E5E5E5;">No characters found. Please check your account or try logging in again.</p>
+    {{end}}
+    {{else}}
+    <p style="text-align: center; color: #E5E5E5;"><a href="/login">Login</a> to see your characters.</p>
+    {{end}}
+</div>
+</body>
+</html>
