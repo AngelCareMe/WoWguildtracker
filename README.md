@@ -1,1 +1,1 @@
-# WoWguildtracker
+# WoW Guild Tracker
