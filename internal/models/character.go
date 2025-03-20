@@ -7,6 +7,8 @@ type Character struct {
 	PlayableClass string
 	Guild         string
 	MythicScore   float64
+	Role          string
+	Spec          string
 }
 
 type AccountCharacters struct {

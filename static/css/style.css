@@ -1,0 +1,247 @@
+/* static/css/style.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: url('https://cdn.discordapp.com/attachments/1035914666414702703/1350902050304819231/1645910642_2-gamerwall-pro-p-bezdna-varkraft-krasivie-oboi-2.jpg?ex=67da6753&is=67d915d3&hm=15497a41d0e76e99414386a99b407364f1f4744dc896333ca1b84342ff4a7639&') no-repeat center center fixed;
+    background-size: cover;
+    color: #e0e0e0;
+    overflow-x: hidden;
+}
+
+.sidebar {
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(25, 20, 40, 0.9);
+    padding: 20px 0;
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    border-right: 1px solid #6a0dad;
+}
+
+.sidebar:hover {
+    transform: translateX(0);
+}
+
+.logo-container {
+    text-align: center;
+    padding: 10px 0;
+    background: rgba(106, 13, 173, 0.2);
+    border-bottom: 1px solid #6a0dad;
+}
+
+.sidebar-logo {
+    max-width: 120px;
+    height: auto;
+    transition: transform 0.3s ease;
+    filter: drop-shadow(0 0 5px #6a0dad);
+}
+
+.sidebar-logo:hover {
+    transform: scale(1.1);
+}
+
+.sidebar a, .sidebar form {
+    display: block;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: #e0e0e0;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    text-shadow: 0 0 5px rgba(106, 13, 173, 0.5);
+}
+
+.sidebar a:hover, .sidebar form:hover {
+    background: rgba(106, 13, 173, 0.3);
+    color: #d1aaff;
+    padding-left: 25px;
+}
+
+.sidebar a::before, .sidebar form::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(#6a0dad, #d1aaff);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.sidebar a:hover::before, .sidebar form:hover::before {
+    transform: scaleY(1);
+}
+
+.sidebar form button {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px rgba(106, 13, 173, 0.5);
+}
+
+.sidebar form button:hover {
+    color: #d1aaff;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #6a0dad;
+    margin: 10px 0;
+}
+
+.content {
+    margin-left: 250px;
+    padding: 30px;
+    min-height: 100vh;
+    background: rgba(25, 20, 40, 0.7);
+    backdrop-filter: blur(5px);
+    border-left: 1px solid #6a0dad;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.auth-section {
+    text-align: center;
+    padding: 60px;
+    background: rgba(25, 20, 40, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(106, 13, 173, 0.3);
+    animation: slideIn 0.5s ease-out;
+}
+
+.auth-section h2 {
+    font-size: 32px;
+    color: #d1aaff;
+    text-shadow: 0 0 10px #6a0dad;
+}
+
+.auth-section p {
+    font-size: 18px;
+    margin: 15px 0;
+    color: #e0e0e0;
+}
+
+.auth-section button {
+    padding: 15px 30px;
+    background: linear-gradient(90deg, #6a0dad, #d1aaff);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    text-shadow: 0 0 5px #6a0dad;
+    box-shadow: 0 0 10px rgba(106, 13, 173, 0.5);
+}
+
+.auth-section button:hover {
+    background: linear-gradient(90deg, #d1aaff, #6a0dad);
+    transform: translateY(-3px);
+    box-shadow: 0 0 15px rgba(209, 170, 255, 0.7);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(25, 20, 40, 0.9);
+    border-radius: 8px;
+    overflow: hidden;
+    animation: slideIn 0.5s ease-out;
+    border: none;
+}
+
+th, td {
+    padding: 8px 12px;
+    text-align: left;
+    color: #e0e0e0;
+    border-bottom: 1px solid #6a0dad;
+    transition: background-color 0.3s ease;
+}
+
+th {
+    background: linear-gradient(90deg, #6a0dad, #4a007a);
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 5px #d1aaff;
+}
+
+td {
+    font-size: 14px;
+}
+
+td:hover {
+    background-color: rgba(106, 13, 173, 0.2);
+}
+
+.class-icon, .role-icon, .spec-icon {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-right: 8px;
+    border-radius: 50%;
+    border: 1px solid #6a0dad;
+    box-shadow: 0 0 5px rgba(106, 13, 173, 0.3);
+}
+
+button {
+    padding: 6px 12px;
+    background: linear-gradient(90deg, #6a0dad, #d1aaff);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    text-shadow: 0 0 5px #6a0dad;
+    box-shadow: 0 0 5px rgba(106, 13, 173, 0.5);
+}
+
+button:hover {
+    background: linear-gradient(90deg, #d1aaff, #6a0dad);
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(209, 170, 255, 0.7);
+}
+
+span.Main {
+    font-weight: bold;
+    color: #d1aaff;
+    padding: 4px 8px;
+    background: rgba(106, 13, 173, 0.3);
+    border-radius: 3px;
+    animation: pulse 1.5s infinite;
+    text-shadow: 0 0 5px #6a0dad;
+    box-shadow: 0 0 5px rgba(209, 170, 255, 0.3);
+    font-size: 12px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}

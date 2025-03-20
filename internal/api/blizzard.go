@@ -18,7 +18,7 @@ func FetchAccountCharacters(accessToken string) (*models.AccountCharacters, erro
 		return nil, fmt.Errorf("access token is empty")
 	}
 
-	url := "https://eu.api.blizzard.com/profile/user/wow?namespace=profile-eu&locale=ru_Ru"
+	url := "https://eu.api.blizzard.com/profile/user/wow?namespace=profile-eu&locale=en_US"
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -69,32 +69,42 @@ func FetchAccountCharacters(accessToken string) (*models.AccountCharacters, erro
 			normalizedName := strings.ToLower(strings.TrimSpace(char.Name))
 			normalizedRealm := strings.ToLower(strings.TrimSpace(char.Realm.Slug))
 
+			// Инициализируем персонажа с пустой гильдией
 			character := models.Character{
 				Name:          char.Name,
 				Realm:         char.Realm.Slug,
 				Level:         char.Level,
 				PlayableClass: char.PlayableClass.Name,
-				Guild:         char.Guild.Name, // Используем значение из API, если оно есть
+				Guild:         "", // Пустая строка
 			}
 
+			// Пытаемся получить точное значение гильдии
 			guildName, err := fetchCharacterProfile(normalizedName, normalizedRealm, accessToken)
 			if err != nil {
 				log.Printf("Failed to fetch character profile for %s on %s: %v", char.Name, char.Realm.Slug, err)
-				// Не устанавливаем "N/A", оставляем пустую строку
-			} else if guildName == "" {
-				log.Printf("No guild found for character %s on %s", char.Name, char.Realm.Slug)
-				// Оставляем Guild пустым
-			} else {
+			} else if guildName != "" {
 				character.Guild = guildName
 			}
 
+			// Получаем Mythic+ рейтинг
 			mythicScore, err := fetchMythicKeystoneProfile(normalizedName, normalizedRealm, accessToken)
 			if err != nil {
-				log.Printf("Failed to fetch Mythic+ score for %s on %s: %v, response: %v", char.Name, char.Realm.Slug, err, mythicScore)
+				log.Printf("Failed to fetch Mythic+ score for %s on %s: %v", char.Name, char.Realm.Slug, err)
 				character.MythicScore = 0.0
 			} else {
 				character.MythicScore = mythicScore
 				log.Printf("Fetched Mythic+ score for %s on %s: %.1f", char.Name, char.Realm.Slug, mythicScore)
+			}
+
+			// Получаем специализацию и роль
+			spec, role, err := fetchSpecializationAndRole(normalizedName, normalizedRealm, accessToken)
+			if err != nil {
+				log.Printf("Failed to fetch specialization and role for %s on %s: %v", char.Name, char.Realm.Slug, err)
+				character.Role = "Unknown"
+				character.Spec = "Unknown"
+			} else {
+				character.Role = role
+				character.Spec = spec
 			}
 
 			characters = append(characters, character)
@@ -106,9 +116,53 @@ func FetchAccountCharacters(accessToken string) (*models.AccountCharacters, erro
 	}, nil
 }
 
+// FetchBattleTag запрашивает BattleTag пользователя из Blizzard API через /oauth/userinfo
+func FetchBattleTag(accessToken string) (string, error) {
+	if accessToken == "" {
+		return "", fmt.Errorf("access token is empty")
+	}
+
+	url := "https://eu.battle.net/oauth/userinfo"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("Failed to create Blizzard API request for BattleTag: %v", err)
+		return "", fmt.Errorf("failed to create Blizzard API request for BattleTag: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Failed to fetch BattleTag: %v", err)
+		return "", fmt.Errorf("failed to fetch BattleTag: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		log.Printf("Blizzard API returned status for BattleTag: %d, body: %s", resp.StatusCode, string(bodyBytes))
+		return "", fmt.Errorf("Blizzard API returned status for BattleTag: %d, body: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var userData struct {
+		BattleTag string `json:"battletag"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&userData); err != nil {
+		log.Printf("Failed to parse BattleTag response: %v", err)
+		return "", fmt.Errorf("failed to parse BattleTag response: %v", err)
+	}
+
+	if userData.BattleTag == "" {
+		return "", fmt.Errorf("BattleTag not found in response")
+	}
+
+	return userData.BattleTag, nil
+}
+
 // fetchCharacterProfile запрашивает профиль персонажа для получения данных о гильдии
 func fetchCharacterProfile(name, realm, accessToken string) (string, error) {
-	url := fmt.Sprintf("https://eu.api.blizzard.com/profile/wow/character/%s/%s?namespace=profile-eu&locale=ru_RU",
+	url := fmt.Sprintf("https://eu.api.blizzard.com/profile/wow/character/%s/%s?namespace=profile-eu&locale=en_US",
 		realm, name)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -128,7 +182,7 @@ func fetchCharacterProfile(name, realm, accessToken string) (string, error) {
 
 	if resp.StatusCode == http.StatusNotFound {
 		log.Printf("Character profile not found for %s on %s", name, realm)
-		return "", nil // Возвращаем пустую строку
+		return "", nil
 	} else if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		log.Printf("Character profile API returned status: %d, body: %s", resp.StatusCode, string(bodyBytes))
@@ -150,7 +204,7 @@ func fetchCharacterProfile(name, realm, accessToken string) (string, error) {
 
 // fetchMythicKeystoneProfile запрашивает Mythic+ рейтинг из Blizzard API
 func fetchMythicKeystoneProfile(name, realm, accessToken string) (float64, error) {
-	url := fmt.Sprintf("https://eu.api.blizzard.com/profile/wow/character/%s/%s/mythic-keystone-profile?namespace=profile-eu&locale=ru_RU",
+	url := fmt.Sprintf("https://eu.api.blizzard.com/profile/wow/character/%s/%s/mythic-keystone-profile?namespace=profile-eu&locale=en_US",
 		realm, name)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -220,4 +274,119 @@ func fetchMythicKeystoneProfile(name, realm, accessToken string) (float64, error
 
 	log.Printf("No Mythic+ runs or current rating found for %s on %s", name, realm)
 	return 0.0, nil
+}
+
+// fetchSpecializationAndRole запрашивает специализацию и определяет роль персонажа
+func fetchSpecializationAndRole(name, realm, accessToken string) (spec string, role string, err error) {
+	url := fmt.Sprintf("https://eu.api.blizzard.com/profile/wow/character/%s/%s/specializations?namespace=profile-eu&locale=en_US",
+		realm, name)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("Failed to create specialization request for %s on %s: %v", name, realm, err)
+		return "", "", fmt.Errorf("failed to create specialization request: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Failed to fetch specialization for %s on %s: %v", name, realm, err)
+		return "", "", fmt.Errorf("failed to fetch specialization: %v", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	log.Printf("Specialization response for %s on %s: status %d, body: %s", name, realm, resp.StatusCode, string(bodyBytes))
+
+	if resp.StatusCode == http.StatusNotFound {
+		log.Printf("Specialization not found for %s on %s", name, realm)
+		return "Unknown", "Unknown", nil
+	} else if resp.StatusCode != http.StatusOK {
+		log.Printf("Specialization API returned status: %d, body: %s", resp.StatusCode, string(bodyBytes))
+		return "", "", fmt.Errorf("specialization API returned status: %d", resp.StatusCode)
+	}
+
+	var specData struct {
+		ActiveSpecialization struct {
+			Specialization struct {
+				Name string `json:"name"`
+			} `json:"specialization"`
+		} `json:"active_specialization"`
+	}
+	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&specData); err != nil {
+		log.Printf("Failed to parse specialization response for %s on %s: %v", name, realm, err)
+		return "Unknown", "Unknown", fmt.Errorf("failed to parse specialization response: %v", err)
+	}
+
+	spec = specData.ActiveSpecialization.Specialization.Name
+	role = determineRole(specData.ActiveSpecialization.Specialization.Name, name) // Используем имя персонажа как временный параметр
+	return spec, role, nil
+}
+
+// determineRole определяет роль персонажа на основе класса и специализации
+func determineRole(spec, playableClass string) string {
+	switch playableClass {
+	case "Warrior":
+		if spec == "Protection" {
+			return "Tank"
+		}
+		return "Melee"
+	case "Paladin":
+		if spec == "Protection" {
+			return "Tank"
+		} else if spec == "Holy" {
+			return "Healer"
+		}
+		return "Melee"
+	case "Druid":
+		if spec == "Guardian" {
+			return "Tank"
+		} else if spec == "Restoration" {
+			return "Healer"
+		} else if spec == "Balance" {
+			return "Ranged"
+		}
+		return "Melee"
+	case "Priest":
+		if spec == "Discipline" || spec == "Holy" {
+			return "Healer"
+		}
+		return "Ranged"
+	case "Mage", "Warlock", "Hunter":
+		return "Ranged"
+	case "Shaman":
+		if spec == "Restoration" {
+			return "Healer"
+		} else if spec == "Elemental" {
+			return "Ranged"
+		}
+		return "Melee"
+	case "Monk":
+		if spec == "Brewmaster" {
+			return "Tank"
+		} else if spec == "Mistweaver" {
+			return "Healer"
+		}
+		return "Melee"
+	case "Demon Hunter":
+		if spec == "Vengeance" {
+			return "Tank"
+		}
+		return "Melee"
+	case "Death Knight":
+		if spec == "Blood" {
+			return "Tank"
+		}
+		return "Melee"
+	case "Rogue":
+		return "Melee"
+	case "Evoker":
+		if spec == "Preservation" {
+			return "Healer"
+		}
+		return "Ranged"
+	default:
+		return "Unknown"
+	}
 }

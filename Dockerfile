@@ -10,7 +10,16 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o wow-guild-tracker ./cmd/server
 # Финальный образ
 FROM alpine:latest
 WORKDIR /root/
+
+# Копируем бинарник
 COPY --from=builder /app/wow-guild-tracker .
+
+# Копируем шаблоны и статические файлы
 COPY --from=builder /app/templates ./templates/
+COPY --from=builder /app/static ./static/
+
+# Указываем порт
 EXPOSE 8080
+
+# Запускаем приложение
 CMD ["./wow-guild-tracker"]

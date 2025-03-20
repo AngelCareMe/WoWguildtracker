@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Profile - WoW Guild Tracker</title>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Основной стиль */
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://cdn.discordapp.com/attachments/1035914666414702703/1350902050304819231/1645910642_2-gamerwall-pro-p-bezdna-varkraft-krasivie-oboi-2.jpg?ex=67da6753&is=67d915d3&hm=15497a41d0e76e99414386a99b407364f1f4744dc896333ca1b84342ff4a7639&') no-repeat center center fixed;
+            background-size: cover;
+            color: #E5E5E5;
+            font-family: 'Roboto Condensed', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Эффект затемнения фона */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            animation: pulse 5s infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 0.9; }
+        }
+
+        /* Контейнер для контента */
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: rgba(27, 31, 42, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 174, 255, 0.5);
+            border: 1px solid #00AEFF;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Логотип WoW */
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            width: 80px;
+            height: 80px;
+            filter: drop-shadow(0 0 10px rgba(0, 174, 255, 0.5));
+            transition: transform 0.3s;
+        }
+
+        .logo:hover {
+            transform: scale(1.1);
+        }
+
+        /* Заголовки */
+        h1 {
+            color: #00AEFF;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(0, 174, 255, 0.7);
+            animation: glow 2s infinite alternate;
+        }
+
+        h2 {
+            color: #FFFFFF;
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Анимация свечения */
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(0, 174, 255, 0.5);
+            }
+            to {
+                text-shadow: 0 0 25px rgba(0, 174, 255, 1);
+            }
+        }
+
+        /* Информация о пользователе */
+        .profile-info {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #E5E5E5;
+            background: rgba(0, 174, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 174, 255, 0.2);
+        }
+
+        .profile-info p {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        .profile-info span {
+            color: #00AEFF;
+            font-weight: bold;
+        }
+
+        /* Кнопки */
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button, .button {
+            background: linear-gradient(90deg, #00AEFF, #0070DE);
+            border: none;
+            padding: 10px 20px;
+            color: #FFFFFF;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+            text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(0, 174, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        button::before, .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        button:hover::before, .button:hover::before {
+            left: 100%;
+        }
+
+        button:hover, .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 174, 255, 0.7);
+            background: linear-gradient(90deg, #00C4FF, #0088FF);
+        }
+
+        button:active, .button:active {
+            transform: scale(0.95);
+        }
+
+        /* Кнопка отвязки */
+        .unlink-button {
+            background: linear-gradient(90deg, #FF4D4D, #CC0000);
+        }
+
+        .unlink-button:hover {
+            background: linear-gradient(90deg, #FF6666, #E60000);
+        }
+
+        /* Кнопка выхода */
+        .logout-button {
+            background: linear-gradient(90deg, #FFA500, #FF8C00);
+        }
+
+        .logout-button:hover {
+            background: linear-gradient(90deg, #FFB732, #FFA500);
+        }
+
+        /* Ссылка */
+        a {
+            color: #00AEFF;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px;
+                padding: 10px;
+            }
+            h1 {
+                font-size: 36px;
+            }
+            h2 {
+                font-size: 22px;
+            }
+            .profile-info p {
+                font-size: 16px;
+            }
+            button, .button {
+                padding: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <img src="https://cdn.discordapp.com/attachments/1035914666414702703/1350900447384436806/86463615dfe4c063a2e48322bd9eb4d3de81104b81b06196032902491f2273d4.gif?ex=67da65d5&is=67d91455&hm=54bd69f9dfafa56441fab89240a98d5d444cfcfb839c8eab5fec0bb2961424ea&" alt="WoW Logo" class="logo">
+    <h1>User Profile</h1>
+
+    {{if .UserID}}
+    <div class="profile-info">
+        <h2>Welcome, {{ .UserID }}!</h2>
+        <p>Battle.net:
+            {{if .HasBattleNetLink}}
+            <span>Linked</span>
+            {{else}}
+            <span>Not Linked</span>
+            {{end}}
+        </p>
+        <p>Discord:
+            {{if .HasDiscordLink}}
+            <span>{{ .DiscordName }}</span>
+            {{else}}
+            <span>Not Linked</span>
+            {{end}}
+        </p>
+    </div>
+
+    <div class="button-container">
+        {{if .HasBattleNetLink}}
+        <form action="/unlink-battlenet" method="post">
+            <input type="hidden" name="user_id" value="{{ .UserID }}">
+            <button type="submit" class="unlink-button">Unlink Battle.net</button>
+        </form>
+        {{else}}
+        <a href="/login" class="button">Link Battle.net</a>
+        {{end}}
+
+        {{if .HasDiscordLink}}
+        <form action="/unlink-discord" method="post">
+            <input type="hidden" name="user_id" value="{{ .UserID }}">
+            <button type="submit" class="unlink-button">Unlink Discord</button>
+        </form>
+        {{else}}
+        <form action="/link-discord" method="get">
+            <input type="hidden" name="access_token" value="{{ .AccessToken }}">
+            <button type="submit" class="button">Link Discord</button>
+        </form>
+        {{end}}
+
+        <form action="/logout" method="post">
+            <input type="hidden" name="user_id" value="{{ .UserID }}">
+            <button type="submit" class="logout-button">Logout</button>
+        </form>
+    </div>
+
+    <p style="text-align: center; margin-top: 20px;">
+        <a href="/">Back to Main Page</a>
+    </p>
+    {{else}}
+    <p style="text-align: center; color: #E5E5E5;">Please <a href="/login">login</a> to view your profile.</p>
+    {{end}}
+</div>
+</body>
+</html>

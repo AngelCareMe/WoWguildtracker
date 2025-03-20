@@ -78,14 +78,21 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("IndexHandler: access_token=%s", accessToken)
 	if accessToken == "" {
 		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-		tmpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
-			"toLower": strings.ToLower,
-		}).ParseFiles("templates/index.html"))
+		tmpl := template.Must(template.New("index.html").ParseFiles("templates/index.html"))
 		if err := tmpl.Execute(w, nil); err != nil {
 			log.Printf("Failed to render template (no token): %v", err)
 			http.Error(w, "Failed to render template: "+err.Error(), http.StatusInternalServerError)
 		}
 		return
+	}
+
+	// Получаем BattleTag пользователя
+	battleTag := "Неизвестный пользователь"
+	bt, err := api.FetchBattleTag(accessToken)
+	if err != nil {
+		log.Printf("Failed to fetch BattleTag: %v", err)
+	} else {
+		battleTag = bt
 	}
 
 	// Получаем данные о персонажах через Blizzard API
@@ -96,11 +103,11 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Сохраняем данные в базу
-	userID := "some_user_id" // Замени на реальный userID
+	// Сохраняем данные в базу (используем accessToken как временный userID)
+	userID := accessToken
 	for _, char := range chars.Characters {
-		log.Printf("Saving character: Name=%s, Realm=%s, Level=%d, Class=%s, Guild=%s, MythicScore=%.1f",
-			char.Name, char.Realm, char.Level, char.PlayableClass, char.Guild, char.MythicScore)
+		log.Printf("Saving character: Name=%s, Realm=%s, Level=%d, Class=%s, Guild=%s, MythicScore=%.1f, Role=%s, Spec=%s",
+			char.Name, char.Realm, char.Level, char.PlayableClass, char.Guild, char.MythicScore, char.Role, char.Spec)
 		err := db.SaveCharacter(
 			userID,
 			char.Name,
@@ -136,11 +143,14 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	if discordName != "" {
 		parts := strings.Split(discordName, "#")
 		if len(parts) > 0 {
-			discordName = parts[0] // Берём только имя без #0
+			discordName = parts[0]
 		}
 	}
 
-	// Создаём новый срез с переведёнными реалмами
+	// Проверяем привязку Battle.net по наличию accessToken
+	hasBattleNetLink := accessToken != ""
+
+	// Создаём новый срез с переведёнными реалмами и статусом "Main"
 	type DisplayCharacter struct {
 		Name            string
 		Realm           string
@@ -149,10 +159,27 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		Guild           string
 		MythicScore     float64
 		TranslatedRealm string
+		IsMain          bool
+		Role            string // Оставляем для отображения
+		Spec            string // Оставляем для отображения
+		RoleIcon        string // Название файла иконки для роли
+		SpecIcon        string // Название файла иконки для специализации
 	}
 	var displayCharacters []DisplayCharacter
 	for _, char := range chars.Characters {
 		translatedRealm := translateAndCapitalizeRealm(char.Realm)
+		isMain := (char.Name == mainCharName && char.Realm == mainCharRealm)
+
+		// Подготавливаем названия иконок
+		roleIcon := "Unknown"
+		if char.Role != "" && char.Role != "Unknown" {
+			roleIcon = strings.ToLower(strings.ReplaceAll(char.Role, " ", "_"))
+		}
+		specIcon := "Unknown"
+		if char.Spec != "" && char.Spec != "Unknown" {
+			specIcon = strings.ToLower(strings.ReplaceAll(char.Spec, " ", "_"))
+		}
+
 		displayChar := DisplayCharacter{
 			Name:            char.Name,
 			Realm:           char.Realm,
@@ -161,34 +188,44 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 			Guild:           char.Guild,
 			MythicScore:     char.MythicScore,
 			TranslatedRealm: translatedRealm,
+			IsMain:          isMain,
+			Role:            char.Role,
+			Spec:            char.Spec,
+			RoleIcon:        roleIcon,
+			SpecIcon:        specIcon,
 		}
 		displayCharacters = append(displayCharacters, displayChar)
-		log.Printf("IndexHandler: Character=%s, TranslatedRealm=%s", char.Name, translatedRealm)
+		log.Printf("IndexHandler: Character=%s, TranslatedRealm=%s, IsMain=%v, Role=%s, Spec=%s, RoleIcon=%s, SpecIcon=%s",
+			char.Name, translatedRealm, isMain, char.Role, char.Spec, roleIcon, specIcon)
 	}
 
 	// Передаём данные в шаблон
 	data := struct {
-		Characters     []DisplayCharacter
-		AccessToken    string
-		MainCharName   string
-		MainCharRealm  string
-		DiscordID      string
-		DiscordName    string
-		HasDiscordLink bool
+		Characters       []DisplayCharacter
+		AccessToken      string
+		BattleTag        string
+		UserID           string
+		MainCharName     string
+		MainCharRealm    string
+		DiscordID        string
+		DiscordName      string
+		HasDiscordLink   bool
+		HasBattleNetLink bool
 	}{
-		Characters:     displayCharacters,
-		AccessToken:    accessToken,
-		MainCharName:   mainCharName,
-		MainCharRealm:  translatedMainCharRealm,
-		DiscordID:      discordID,
-		DiscordName:    discordName,
-		HasDiscordLink: discordID != "",
+		Characters:       displayCharacters,
+		AccessToken:      accessToken,
+		BattleTag:        battleTag,
+		UserID:           userID,
+		MainCharName:     mainCharName,
+		MainCharRealm:    translatedMainCharRealm,
+		DiscordID:        discordID,
+		DiscordName:      discordName,
+		HasDiscordLink:   discordID != "",
+		HasBattleNetLink: hasBattleNetLink,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	tmpl := template.Must(template.New("index.html").Funcs(template.FuncMap{
-		"toLower": strings.ToLower,
-	}).ParseFiles("templates/index.html"))
+	tmpl := template.Must(template.New("index.html").ParseFiles("templates/index.html"))
 	if err := tmpl.Execute(w, data); err != nil {
 		log.Printf("Failed to render template: %v", err)
 		http.Error(w, "Failed to render template: "+err.Error(), http.StatusInternalServerError)
@@ -213,9 +250,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	// Формируем URL с параметром state
+	// Формируем URL с параметром state, добавляем scope openid
 	url := fmt.Sprintf(
-		"https://eu.battle.net/oauth/authorize?client_id=%s&redirect_uri=http://localhost:8080/callback&response_type=code&scope=wow.profile&state=%s",
+		"https://eu.battle.net/oauth/authorize?client_id=%s&redirect_uri=http://localhost:8080/callback&response_type=code&scope=wow.profile+openid&state=%s",
 		blizzardClientID, state,
 	)
 	log.Printf("LoginHandler: Redirecting to Blizzard OAuth URL: %s", url)
@@ -295,6 +332,13 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 // LinkDiscordHandler перенаправляет на Discord OAuth
 func LinkDiscordHandler(w http.ResponseWriter, r *http.Request) {
+	accessToken := r.URL.Query().Get("access_token")
+	if accessToken == "" {
+		log.Printf("LinkDiscordHandler: No access token provided")
+		http.Error(w, "Access token is required", http.StatusBadRequest)
+		return
+	}
+
 	// Генерируем state для Discord
 	state, err := generateState()
 	if err != nil {
@@ -303,10 +347,16 @@ func LinkDiscordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Сохраняем state в куки
+	// Сохраняем state и accessToken в куки
 	http.SetCookie(w, &http.Cookie{
 		Name:     "discord_oauth_state",
 		Value:    state,
+		Path:     "/",
+		HttpOnly: true,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
 	})
@@ -334,9 +384,25 @@ func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получаем accessToken из куки
+	accessTokenCookie, err := r.Cookie("access_token")
+	if err != nil {
+		log.Printf("DiscordCallbackHandler: Access token cookie not found: %v", err)
+		http.Error(w, "Access token cookie not found", http.StatusBadRequest)
+		return
+	}
+	accessToken := accessTokenCookie.Value
+
 	// Очищаем куки
 	http.SetCookie(w, &http.Cookie{
 		Name:     "discord_oauth_state",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
@@ -383,8 +449,8 @@ func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	// Формируем никнейм в формате username#discriminator
 	discordName := fmt.Sprintf("%s#%s", user.Username, user.Discriminator)
 
-	// Сохраняем данные в базе
-	userID := "some_user_id" // Замени на реальный userID
+	// Сохраняем данные в базе, используем accessToken как userID
+	userID := accessToken
 	if err := db.SaveDiscordLink(userID, user.ID, discordName); err != nil {
 		log.Printf("DiscordCallbackHandler: Failed to save Discord link: %v", err)
 		http.Error(w, "Failed to save Discord link: "+err.Error(), http.StatusInternalServerError)
@@ -392,12 +458,10 @@ func DiscordCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Перенаправляем обратно на главную страницу
-	accessToken := r.URL.Query().Get("access_token")
 	log.Printf("DiscordCallbackHandler: Redirecting to /?access_token=%s", accessToken)
 	http.Redirect(w, r, "/?access_token="+accessToken, http.StatusSeeOther)
 }
 
-// SetMainHandler устанавливает главного персонажа
 func SetMainHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.Printf("SetMainHandler: Method not allowed: %s", r.Method)
@@ -416,8 +480,8 @@ func SetMainHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Сохраняем главного персонажа
-	userID := "some_user_id" // Замени на реальный userID
+	// Используем accessToken как временный userID
+	userID := accessToken
 	err := db.SaveMainCharacter(userID, characterName, realm)
 	if err != nil {
 		log.Printf("SetMainHandler: Failed to set main character: %v", err)
@@ -428,4 +492,72 @@ func SetMainHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("SetMainHandler: Successfully set main character: %s, %s for user %s", characterName, realm, userID)
 	// Перенаправляем обратно на главную страницу
 	http.Redirect(w, r, "/?access_token="+accessToken, http.StatusSeeOther)
+}
+
+// UnlinkBattleNetHandler отвязывает Battle.net аккаунт
+func UnlinkBattleNetHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := "some_user_id" // Замените на реальный userID при интеграции
+	log.Printf("UnlinkBattleNetHandler: user_id=%s", userID)
+
+	err := db.UnlinkBattleNet(userID)
+	if err != nil {
+		log.Printf("Failed to unlink Battle.net for user %s: %v", userID, err)
+		http.Error(w, "Failed to unlink Battle.net: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Перенаправляем на главную страницу
+	accessToken := r.URL.Query().Get("access_token")
+	http.Redirect(w, r, "/?access_token="+accessToken, http.StatusSeeOther)
+}
+
+// UnlinkDiscordHandler отвязывает Discord аккаунт
+func UnlinkDiscordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := "some_user_id" // Замените на реальный userID при интеграции
+	log.Printf("UnlinkDiscordHandler: user_id=%s", userID)
+
+	err := db.UnlinkDiscord(userID)
+	if err != nil {
+		log.Printf("Failed to unlink Discord for user %s: %v", userID, err)
+		http.Error(w, "Failed to unlink Discord: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Перенаправляем на главную страницу
+	accessToken := r.URL.Query().Get("access_token")
+	http.Redirect(w, r, "/?access_token="+accessToken, http.StatusSeeOther)
+}
+
+// LogoutHandler выполняет выход из аккаунта
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userID := "some_user_id" // Замените на реальный userID при интеграции
+	log.Printf("LogoutHandler: user_id=%s", userID)
+
+	// Очистка всех данных пользователя
+	err := db.UnlinkBattleNet(userID)
+	if err != nil {
+		log.Printf("Failed to unlink Battle.net during logout for user %s: %v", userID, err)
+	}
+	err = db.UnlinkDiscord(userID)
+	if err != nil {
+		log.Printf("Failed to unlink Discord during logout for user %s: %v", userID, err)
+	}
+
+	// Перенаправляем на главную страницу
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

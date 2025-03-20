@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
     app:
         build:
@@ -7,8 +6,12 @@ services:
             dockerfile: Dockerfile
         ports:
             - "8080:8080"
+        volumes:
+            - ./static:/app/static
+            - ./templates:/app/templates
         depends_on:
-            - db
+            db:
+                condition: service_healthy
         environment:
             - DATABASE_URL=postgres://user:password@db:5432/wow_tracker?sslmode=disable
             - BLIZZARD_CLIENT_ID=9511f15bd8ed493d8fbc08a8c572289d
